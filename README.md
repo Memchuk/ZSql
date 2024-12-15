@@ -12,7 +12,7 @@
 }
 ```
 Также можно подписаться на метод для ловли ошибок (на примере WinForms):
-```css
+```cs
 using ZSqlLibrary;
 	ZSql sql = new ZSql();
 
