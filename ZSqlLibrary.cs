@@ -42,7 +42,7 @@ namespace ZSqlLibrary
         public MySqlConnection Conn;
 
         /// <summary>
-        /// Создает экземпляр класса, создавая коннект стринг через обращение в конфиг файл.
+        /// Создает экземпляр класса, создавая строку подключения через обращение в конфиг файл.
         /// </summary>
         public ZSql()
         {
@@ -52,7 +52,7 @@ namespace ZSqlLibrary
             Conn = new MySqlConnection(ConnectionString);
         }
         /// <summary>
-        /// Создает экземпляр класса, создавая коннект стринг через передаваемые аргументы.
+        /// Создает экземпляр класса, создавая строку подключения через передаваемые аргументы.
         /// </summary>
         public ZSql(string _Server, string _Port, string _DataBase, string _Login, string _Password)
         {
@@ -60,7 +60,7 @@ namespace ZSqlLibrary
             Conn = new MySqlConnection(ConnectionString);
         }
         /// <summary>
-        /// Создает экземпляр класса, передает коннект стринг из аргумента.
+        /// Создает экземпляр класса, передает строку подключения из аргумента.
         /// </summary>
         public ZSql(string ConnectionString) => Conn = new MySqlConnection(ConnectionString);
         /// <summary>
@@ -73,7 +73,10 @@ namespace ZSqlLibrary
         public MySqlConnection GetConn => Conn;
 
         /// <summary>
-        /// Возвращает True, если подключение установлено, иначе False.;
+        /// Пингует сервер.
+        ///     
+        /// Возврат:
+        ///     Возвращает True, если подключение установлено, иначе False.
         /// </summary>
         public bool CheckConnection()
         {
@@ -92,7 +95,11 @@ namespace ZSqlLibrary
             }
         }
         /// <summary>
-        /// Возвращает True, если подключение установлено, иначе False. Также возвращает ошибку.;
+        /// Пингует сервер.
+        ///     
+        /// Возврат:
+        ///     Возвращает True, если подключение установлено, иначе False.
+        ///     Error - Пойманная ошибка.
         /// </summary>
         public bool CheckConnection(out Exception Error)
         {
@@ -113,6 +120,70 @@ namespace ZSqlLibrary
             }
         }
 
-
+        /// <summary>
+        /// Делает запрос на взятие таблицы.
+        /// 
+        /// Аргументы:
+        ///     TableName - Название таблицы;
+        ///     ColumnNames - Название столбцов через запятую, можно использовать "*";
+        ///     RowLimit - Лимит на количество строк, 0 = без лимита;
+        ///     
+        /// Возврат:
+        ///     Возвращает True, если запрос выполнен, иначе False.
+        ///     Table - Полученная таблица.
+        /// </summary>
+        public bool GetTable(string TableName, string ColumnNames, uint RowLimit, out DataTable Table)
+        {
+            Table = new DataTable();
+            try
+            {
+                string Limit = RowLimit != 0 ? $" LIMIT {RowLimit}" : "";
+                string Query = $"SELECT {ColumnNames} FROM {TableName}{Limit};";
+                new MySqlDataAdapter(Query, Conn).Fill(Table);
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+            finally
+            {
+                Conn.Close();
+            }
+        }
+        /// <summary>
+        /// Делает запрос на взятие таблицы.
+        /// 
+        /// Аргументы:
+        ///     TableName - Название таблицы;
+        ///     ColumnNames - Название столбцов через запятую, можно использовать "*";
+        ///     RowLimit - Лимит на количество строк, 0 = без лимита;
+        ///     
+        /// Возврат:
+        ///     Возвращает True, если запрос выполнен, иначе False.
+        ///     Table - Полученная таблица.
+        ///     Error - Пойманная ошибка.
+        /// </summary>
+        public bool GetTable(string TableName, string ColumnNames, uint RowLimit, out DataTable Table, out Exception Error)
+        {
+            Table = new DataTable();
+            Error = null;
+            try
+            {
+                string Limit = RowLimit != 0 ? $" LIMIT {RowLimit}" : "";
+                string Query = $"SELECT {ColumnNames} FROM {TableName}{Limit};";
+                new MySqlDataAdapter(Query, Conn).Fill(Table);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Error = e;
+                return false;
+            }
+            finally
+            {
+                Conn.Close();
+            }
+        }
     }
 }
