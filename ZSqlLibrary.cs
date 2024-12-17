@@ -6,16 +6,9 @@ using System;
 
 namespace ZSqlLibrary
 {
-    public delegate void EventHandler(object sender, ZSQLException e);
-    public class ZSQLException : EventArgs
-    {
-        public Exception Exception { get; private set; }
-
-        public ZSQLException(Exception error)
-        {
-            Exception = error;
-        }
-    }
+    /// <summary>
+    /// Используется для чтения конфига.
+    /// </summary>
     public class SqlConnData
     {
         public string Server { get; set; }
@@ -39,34 +32,49 @@ namespace ZSqlLibrary
         }
     }
 
-
+    /// <summary>
+    /// Представляет собой оболочку для управления MySQL запросов.
+    /// </summary>
     public class ZSql
     {
         static string ConfigPath = $"{AppDomain.CurrentDomain.BaseDirectory}config";
         public event EventHandler Error;
-        static string ConnectionString;
         public MySqlConnection Conn;
 
-        public ZSql() //пустое создание класса, берем конфиги
+        /// <summary>
+        /// Создает экземпляр класса, создавая коннект стринг через обращение в конфиг файл.
+        /// </summary>
+        public ZSql()
         {
             string rawData = File.ReadAllText($"{ConfigPath}\\ZSql.data"); //если файла нет, вылет, потом чета придумать
             SqlConnData data = JsonSerializer.Deserialize<SqlConnData>(rawData);
-            ConnectionString = data.GetConnStr();
+            string ConnectionString = data.GetConnStr();
             Conn = new MySqlConnection(ConnectionString);
         }
+        /// <summary>
+        /// Создает экземпляр класса, создавая коннект стринг через передаваемые аргументы.
+        /// </summary>
         public ZSql(string _Server, string _Port, string _DataBase, string _Login, string _Password)
         {
-            ConnectionString = $"Server={_Server};Port={_Port};Database={_DataBase};uid={_Login};pwd={_Password};";
+            string ConnectionString = $"Server={_Server};Port={_Port};Database={_DataBase};uid={_Login};pwd={_Password};";
             Conn = new MySqlConnection(ConnectionString);
         }
-        public ZSql(string _ConnectionString)
-        {
-            ConnectionString = _ConnectionString;
-            Conn = new MySqlConnection(ConnectionString);
-        }
+        /// <summary>
+        /// Создает экземпляр класса, передает коннект стринг из аргумента.
+        /// </summary>
+        public ZSql(string ConnectionString) => Conn = new MySqlConnection(ConnectionString);
+        /// <summary>
+        /// Возвращает используемую строку подключения.
+        /// </summary>
+        public string GetConnectionString => Conn.ConnectionString;
+        /// <summary>
+        /// Возвращает используемый экземпляр подключения.
+        /// </summary>
+        public MySqlConnection GetConn => Conn;
 
-        public string GetConnectionString => ConnectionString;
-
+        /// <summary>
+        /// Возвращает True, если подключение установлено, иначе False.;
+        /// </summary>
         public bool CheckConnection()
         {
             try
@@ -76,7 +84,27 @@ namespace ZSqlLibrary
             }
             catch (Exception e)
             {
-                onError(new ZSQLException(e));
+                return false;
+            }
+            finally
+            {
+                Conn.Close();
+            }
+        }
+        /// <summary>
+        /// Возвращает True, если подключение установлено, иначе False. Также возвращает ошибку.;
+        /// </summary>
+        public bool CheckConnection(out Exception Error)
+        {
+            Error = null;
+            try
+            {
+                Conn.Open();
+                return Conn.Ping();
+            }
+            catch (Exception e)
+            {
+                Error = e;
                 return false;
             }
             finally
@@ -85,10 +113,6 @@ namespace ZSqlLibrary
             }
         }
 
-        private void onError(ZSQLException e)
-        {
-            EventHandler handler = Error;
-            handler?.Invoke(this, e);
-        }
+
     }
 }
